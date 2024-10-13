@@ -2,12 +2,13 @@
 include "../connect.php";
 
 // Set Id_Livreur to 1 initially (for the logged-in user)
-$Id_Livreur = 1;
+$Id_Livreur = 0;
 
 // Query to get all orders for the logged-in Livreur
 $sql_orders = "SELECT Id_Demandes, Date_commande, Heure_commande 
                FROM demandes 
-               WHERE Id_Livreur = :Id_Livreur";
+               WHERE Id_Livreur = :Id_Livreur
+               AND Id_Statut_Commande IN (3, 4, 6)";
 
 $stmt_orders = $con->prepare($sql_orders);
 $stmt_orders->bindParam(':Id_Livreur', $Id_Livreur, PDO::PARAM_INT);
@@ -39,39 +40,5 @@ foreach($result_orders as $row_orders) {
         'Heure_commande' => $Heure_commande
     ];
 }
-
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orders</title>
-</head>
-<body>
-    <h1>Orders for Livreur: <?php echo $Id_Livreur; ?></h1>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Order Number (Id_Demandes)</th>
-                <th>Number of Items</th>
-                <th>Order Date</th>
-                <th>Order Time</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php
-        // Loop through the orders and display them
-        foreach ($orders as $order) {
-            echo "<tr>
-                    <td>{$order['Id_Demandes']}</td>
-                    <td>{$order['num_items']}</td>
-                    <td>{$order['Date_commande']}</td>
-                    <td>{$order['Heure_commande']}</td>
-                </tr>";
-        }
-        ?>
-        </tbody>
-    </table>
-</body>
-</html>
+header('Content-Type: application/json');
+    echo json_encode($orders);

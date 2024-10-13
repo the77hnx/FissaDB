@@ -2,6 +2,8 @@
 // Include database connection
 include '../connect.php';
 
+$id_magasin = 5;  // Fixed value for Id_magasin
+
 // Check if form data is submitted via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Get POST data and sanitize it
@@ -13,9 +15,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     try {
-        // Prepare and execute SQL query
-        $sql = $con->prepare("INSERT INTO categories (Nom_Cat) VALUES (:name)");
+        // Prepare and execute SQL query with Id_magasin
+        $sql = $con->prepare("INSERT INTO categories (Nom_Cat, Id_magasin) VALUES (:name, :id_magasin)");
         $sql->bindParam(':name', $name, PDO::PARAM_STR);
+        $sql->bindParam(':id_magasin', $id_magasin, PDO::PARAM_INT);
 
         if ($sql->execute()) {
             echo "New category created successfully";
@@ -31,22 +34,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 } else {
     echo "Invalid request method.";
 }
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Insert Category</title>
-</head>
-<body>
-    <h1>Insert New Category</h1>
-    <form action="Add_category.php" method="post">
-        <label for="name">Category Name:</label>
-        <input type="text" id="name" name="name" required>
-        <br><br>
-        <input type="submit" value="Submit">
-    </form>
-</body>
-</html>

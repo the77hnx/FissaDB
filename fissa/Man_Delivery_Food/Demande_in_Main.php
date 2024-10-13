@@ -40,5 +40,3 @@ if ($result->rowCount() > 0) {
 } else {
     echo "No orders found.";
 }
-
-?>

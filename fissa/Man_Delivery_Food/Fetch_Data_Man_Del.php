@@ -1,79 +1,52 @@
 <?php
+ini_set('display_errors', 0); // Hide errors
+ini_set('log_errors', 1);     // Log errors
+error_reporting(E_ALL);       // Report all errors
+
 include '../connect.php';
 
-// Assuming you get the delivery worker's ID from a request or session.
-$deliveryWorkerID = 5; // Set to 5 for this example
+$ManDeliveryId = 0; // Assuming the delivery worker ID is hardcoded or dynamically set
 
-// Get delivery worker details (name, balance, accepted requests, rejected requests, evaluation)
-$sql = "SELECT Nom_Livreur, Balance, Accept_Dem, Remove_Dem, Evaluation 
-        FROM livreur 
-        WHERE Id_Livreur = ?";
-$stmt = $con->prepare($sql);
-$stmt->execute([$deliveryWorkerID]);
-$worker = $stmt->fetch(PDO::FETCH_ASSOC);
+try {
+    // Fetch the necessary information
+    $query = "SELECT 
+                l.Statut_Livreur, 
+                l.Nom_Livreur AS Livreur_name,
+                (SELECT COUNT(*) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande IN (1, 2, 3, 4, 6)) AS accepted_orders,
+                (SELECT COUNT(*) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande = 5) AS cancelled_orders,
+                (SELECT COUNT(*) FROM demandes WHERE Id_Livreur = :mandeliveryId AND DATE(Date_commande) = CURDATE()) AS todays_orders,
+                (SELECT COUNT(*) FROM demandes WHERE Id_Livreur = :mandeliveryId AND DATE_FORMAT(Date_commande, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS monthly_orders,
+                (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande = 6 AND DATE(Date_commande) = CURDATE()) AS wallet_daily_value,
+                (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande = 6 AND YEARWEEK(Date_commande, 1) = YEARWEEK(CURDATE(), 1)) AS wallet_weekly_value,
+                (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande = 6 AND DATE_FORMAT(Date_commande, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS wallet_monthly_value,
+                (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande = 6) AS wallet_value,
+                l.Evaluation,
+                d.Id_Demandes AS Order_ID,
+                d.Prix_Livraison AS Delivery_Price,
+                d.Prix_Demande AS Order_Price,
+                c.Nom_Client AS Customer_Name,
+                c.Coordonnes AS Customer_Location,
+                r.Coordonnes AS Restaurant_Location
+            FROM 
+                livreur l
+            LEFT JOIN 
+                demandes d ON l.Id_Livreur = d.Id_Livreur
+            LEFT JOIN 
+                client c ON d.Id_Client = c.Id_Client
+            LEFT JOIN 
+                magasin r ON d.Id_magasin = r.Id_magasin
+            WHERE 
+                l.Id_Livreur = :mandeliveryId
+                AND d.Id_Statut_Commande IN (3, 4)";
 
-// Check if worker exists
-if ($worker) {
-    // No filtering by day, week, or month since you don't need it
-    $balanceToday = $worker['Balance']; // Use total balance
-    $balanceWeek = $worker['Balance']; // Use total balance
-    $balanceMonth = $worker['Balance']; // Use total balance
+    $stmt = $con->prepare($query);
+    $stmt->bindValue(':mandeliveryId', $ManDeliveryId, PDO::PARAM_INT);
+    $stmt->execute();
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get today's accepted requests (assuming orders are stored in another table)
-    $sqlAcceptToday = "SELECT COUNT(*) AS accepted_today 
-                       FROM livreur 
-                       WHERE Id_Livreur = ? AND Accept_Dem = 1";
-    $stmt = $con->prepare($sqlAcceptToday);
-    $stmt->execute([$deliveryWorkerID]);
-    $acceptedToday = $stmt->fetch(PDO::FETCH_ASSOC)['accepted_today'];
-
-    // Get this month's accepted requests (same as above, no date filtering)
-    $acceptedMonth = $worker['Accept_Dem']; // Use total accepted requests
-} else {
-    echo "No delivery worker found with the provided ID.";
-    exit;
+    // Return the data as JSON
+    header('Content-Type: application/json');
+    echo json_encode($data);
+} catch (Exception $e) {
+    echo json_encode(['error' => $e->getMessage()]);
 }
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Worker Information</title>
-</head>
-<body>
-
-    <h1>Worker Information</h1>
-    
-    <form>
-        <label>Name: </label>
-        <input type="text" value="<?php echo $worker['Nom_Livreur']; ?>" disabled><br>
-
-        <label>Balance for Today: </label>
-        <input type="text" value="<?php echo $balanceToday ?? 0; ?>" disabled><br>
-
-        <label>Balance for This Week: </label>
-        <input type="text" value="<?php echo $balanceWeek ?? 0; ?>" disabled><br>
-
-        <label>Balance for This Month: </label>
-        <input type="text" value="<?php echo $balanceMonth ?? 0; ?>" disabled><br>
-
-        <label>Total Accepted Requests: </label>
-        <input type="text" value="<?php echo $worker['Accept_Dem']; ?>" disabled><br>
-
-        <label>Total Rejected Requests: </label>
-        <input type="text" value="<?php echo $worker['Remove_Dem']; ?>" disabled><br>
-
-        <label>Accepted Requests for Today: </label>
-        <input type="text" value="<?php echo $acceptedToday ?? 0; ?>" disabled><br>
-
-        <label>Accepted Requests for This Month: </label>
-        <input type="text" value="<?php echo $acceptedMonth ?? 0; ?>" disabled><br>
-
-        <label>Delivery Worker Evaluation: </label>
-        <input type="text" value="<?php echo $worker['Evaluation']; ?>" disabled><br>
-    </form>
-
-</body>
-</html>

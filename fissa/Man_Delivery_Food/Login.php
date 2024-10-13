@@ -1,62 +1,69 @@
 <?php
-// Include the database connection file
+
 include '../connect.php';
+session_start();
+header('Content-Type: application/json'); // Make sure the response is always JSON
 
-// Initialize error message variable
-$errorMsg = "";
+try {
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        $email = $_POST['email'];
+        $password = trim($_POST['password']);
 
-// Check if the form was submitted
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Retrieve data from POST request
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+        // Query to check if the account exists
+        $sql = "SELECT Id_Livreur, Password, Activite_livreur, Nom_Livreur, N_Vehicule FROM livreur WHERE E_mail = :email";
+        $stmt = $con->prepare($sql);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
 
-    // Prepare SQL to check if the user exists
-    $sql = "SELECT * FROM livreur WHERE E_mail = :email AND Password = :password";
-    $stmt = $con->prepare($sql);
+        if ($stmt->rowCount() > 0) {
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stored_password = $user['Password'];
+            $activite = $user['Activite_livreur'];
+            $nom_livreur = $user['Nom_Livreur'];
+            $n_vehicule = $user['N_Vehicule'];
+            $userId = $user['Id_Livreur'];
 
-    // Bind parameters
-    $stmt->bindValue(':email', $email, PDO::PARAM_STR);
-    $stmt->bindValue(':password', $password, PDO::PARAM_STR); // Password should be hashed in a real-world scenario
-
-    // Execute the query
-    $stmt->execute();
-
-    // Check if a matching user was found
-    if ($stmt->rowCount() > 0) {
-        // Login successful
-        echo "<p>Login successful! Welcome back, $email.</p>";
+            // Password check (consider using password_hash in a real app)
+            if ($password === $stored_password) {
+                if ($activite === "مقبول") {
+                    echo json_encode([
+                        'success' => true,
+                        'activite' => 'مقبول',
+                        'message' => 'Login successful!'
+                    ]);
+                } elseif ($activite === "قيد المراجعة") {
+                    echo json_encode([
+                        'success' => true,
+                        'activite' => 'قيد المراجعة',
+                        'nom_livreur' => $nom_livreur,
+                        'n_vehicule' => $n_vehicule,
+                        'message' => 'Your account is under review.'
+                    ]);
+                }
+                $_SESSION['userId'] = $userId; // Set the session
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid password.'
+                ]);
+            }
+        } else {
+            echo json_encode([
+                'success' => false,
+                'message' => 'No account found with that email.'
+            ]);
+        }
     } else {
-        // Login failed
-        $errorMsg = "Invalid email or password. Please try again.";
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid request method.'
+        ]);
     }
+} catch (Exception $e) {
+    // Log errors but return JSON
+    error_log($e->getMessage()); // Log error
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server error, please try again later.'
+    ]);
 }
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Login</title>
-</head>
-<body>
-    <h2>User Login</h2>
-    <form action="" method="POST">
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" required><br><br>
-
-        <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" required><br><br>
-
-        <button type="submit">Login</button>
-    </form>
-
-    <!-- Display error message if login fails -->
-    <?php
-    if (!empty($errorMsg)) {
-        echo "<p style='color:red;'>$errorMsg</p>";
-    }
-    ?>
-</body>
-</html>

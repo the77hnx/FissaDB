@@ -1,69 +1,39 @@
 <?php
-include '../connect.php'; // Include the database connection
+include '../connect.php'; // Include database connection
 
-// Function to fetch orders based on status
-function fetchOrdersByStatus($statusId) {
-    global $con; // Using global connection
-    $stmt = $con->prepare("SELECT * FROM demandes WHERE Id_Statut_Commande = :statusId");
+// Function to fetch orders by status and Id_Magasin
+function fetchOrdersByMagasinAndStatus($magasinId, $statusId) {
+    global $con;
+    
+    // Query to fetch orders with required details from multiple tables
+    $stmt = $con->prepare(query: "
+        SELECT d.Id_Demandes, d.Date_commande, d.Heure_commande, d.info_mag, d.Prix_Demande, 
+               c.Nom_Client, s.Nom_Statut, a.Nom_Article, a.Quantite, a.Prix, d.Id_Statut_Commande 
+        FROM demandes d
+        INNER JOIN client c ON d.Id_Client = c.Id_Client
+        INNER JOIN stat_cmd s ON d.Id_Statut_Commande = s.Id_Statut_Commande
+        INNER JOIN articles a ON d.Id_Demandes = a.Id_Demandes
+        WHERE d.Id_Magasin = :magasinId AND d.Id_Statut_Commande = :statusId
+    ");
+    
+    $stmt->bindValue(':magasinId', $magasinId, PDO::PARAM_INT);
     $stmt->bindValue(':statusId', $statusId, PDO::PARAM_INT);
     $stmt->execute();
-    $orders = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $orders[] = $row;
-    }
-    return $orders;
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC); // Return all results directly
 }
 
-// Fetch orders for each status ID
-$newOrders = fetchOrdersByStatus(1);
-$preparationOrders = fetchOrdersByStatus(2);
-$deliveryOrders = fetchOrdersByStatus(3);
-$waitingOrders = fetchOrdersByStatus(4);
-$cancelledOrders = fetchOrdersByStatus(5);
-$completedOrders = fetchOrdersByStatus(6);
-?>
+// Example usage
+$magasinId = 5;  // The Id_Magasin you are filtering by
+$statusOrders = [
+    'case0' => fetchOrdersByMagasinAndStatus($magasinId, 1),
+    'case1' => fetchOrdersByMagasinAndStatus($magasinId, 2),
+    'case2' => fetchOrdersByMagasinAndStatus($magasinId, 3),
+    'case3' => fetchOrdersByMagasinAndStatus($magasinId,4),
+    'case4' => fetchOrdersByMagasinAndStatus($magasinId,6),
+    'case5' => fetchOrdersByMagasinAndStatus($magasinId, 5)
+];
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Status Viewer</title>
-</head>
-<body>
-    <h1>Order Status Viewer</h1>
-
-    <!-- Form to select and view orders by status -->
-    <form method="GET" action="">
-        <label for="status">Select Order Status:</label>
-        <select id="status" name="status">
-            <option value="1">New</option>
-            <option value="2">In Preparation</option>
-            <option value="3">In Delivery</option>
-            <option value="4">Waiting for Delivery</option>
-            <option value="5">Cancelled</option>
-            <option value="6">Completed</option>
-        </select>
-        <button type="submit">View Orders</button>
-    </form>
-
-    <?php
-    if (isset($_GET['status'])) {
-        $status = intval($_GET['status']);
-        $orders = fetchOrdersByStatus($status);
-
-        echo "<h2>Orders with Status ID: $status</h2>";
-        if (!empty($orders)) {
-            echo "<ul>";
-            foreach ($orders as $order) {
-                // Adjust the fields based on your table schema
-                echo "<li>Order ID: {$order['Id_Demandes']} - Details: {$order['Date_commande']}</li>";
-            }
-            echo "</ul>";
-        } else {
-            echo "<p>No orders found for this status.</p>";
-        }
-    }
-    ?>
-</body>
-</html>
+// Set header for JSON response
+header('Content-Type: application/json');
+echo json_encode($statusOrders); // Send all data in JSON format for the Java code to handle

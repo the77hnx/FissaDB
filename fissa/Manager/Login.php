@@ -1,17 +1,15 @@
 <?php
 
 include '../connect.php';
-
-session_start(); // Start the session
-
-header('Content-Type: application/json'); // Set the content type to JSON
+session_start();
+header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $password = trim($_POST['password']);
 
-    // Check user credentials
-    $sql = "SELECT Id_Client, Password FROM magasin WHERE E_mail = :email";
+    // Query to check if magasin exists
+    $sql = "SELECT Id_magasin, Password, Activite_magasin, Nom_magasin, N_Enregistrement FROM magasin WHERE E_mail = :email";  // Ensure column 'E_mail' exists, otherwise replace with correct one
     $stmt = $con->prepare($sql);
     $stmt->bindParam(':email', $email);
     $stmt->execute();
@@ -19,15 +17,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($stmt->rowCount() > 0) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         $stored_password = $user['Password'];
-        $userId = $user['Id_Client'];
+        $activite = $user['Activite_magasin'];
+        $nom_magasin = $user['Nom_magasin'];
+        $n_enregistrement = $user['N_Enregistrement'];
+        $userId = $user['Id_magasin'];
 
-        // Directly compare passwords (for demonstration purposes only)
+        // Password check (consider using password_hash in a real app)
         if ($password === $stored_password) {
-            echo json_encode([
-                'success' => true,
-                'message' => 'Login successful!'
-            ]);
-            $_SESSION['userId'] = $userId; // Set the user ID in the session
+            if ($activite === "مقبول") {
+                echo json_encode([
+                    'success' => true,
+                    'activite' => 'مقبول',
+                    'message' => 'Login successful!'
+                ]);
+            } elseif ($activite === "قيد المراجعة") {
+                echo json_encode([
+                    'success' => true,
+                    'activite' => 'قيد المراجعة',
+                    'nom_magasin' => $nom_magasin,
+                    'n_enregistrement' => $n_enregistrement,
+                    'message' => 'Your account is under review.'
+                ]);
+            }
+            $_SESSION['userId'] = $userId; // Set the session
         } else {
             echo json_encode([
                 'success' => false,
@@ -46,4 +58,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'message' => 'Invalid request method.'
     ]);
 }
-

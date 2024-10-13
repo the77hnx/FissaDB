@@ -1,94 +1,37 @@
 <?php
-// Include the database connection file
-include("../connect.php");
+ini_set('display_errors', 0); // Hide errors
+ini_set('log_errors', 1);     // Log errors
+error_reporting(E_ALL);       // Report all errors
 
-// Function to get the ID of the logged-in store
-function getStoreId() {
-    // Return the hardcoded store ID
-    return 5; // Setting Id_magasin to 5
+include '../connect.php';
+
+$storeId = 5; // Assuming the store ID is hardcoded or dynamically set
+
+try {
+    // Fetch the necessary information
+    $query = "SELECT Statut_magasin, Nom_magasin as shop_name,
+              (SELECT COUNT(*) FROM produits WHERE Id_magasin = :storeId) as num_products,
+              (SELECT COUNT(*) FROM categories WHERE Id_magasin = :storeId) as num_cat,
+              (SELECT COUNT(*) FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande IN (1, 2, 3, 4, 6)) as accepted_orders,
+              (SELECT COUNT(*) FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande = 5) as cancelled_orders,
+              (SELECT COUNT(*) FROM demandes WHERE Id_magasin = :storeId AND DATE(Date_commande) = CURDATE()) as todays_orders,
+              (SELECT COUNT(*) FROM demandes WHERE Id_magasin = :storeId AND DATE_FORMAT(Date_commande, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) as monthly_orders,
+
+              (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande = 6 AND DATE(Date_commande) = CURDATE()) AS wallet_daily_value,
+              (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande = 6 AND YEARWEEK(Date_commande, 1) = YEARWEEK(CURDATE(), 1)) AS wallet_weekly_value,
+              (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande = 6 AND DATE_FORMAT(Date_commande, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')) AS wallet_monthly_value,
+              (SELECT IFNULL(SUM(Prix_Demande), 0) FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande = 6 ) AS wallet_value,
+
+              Evaluation FROM magasin WHERE Id_magasin = :storeId";
+
+    $stmt = $con->prepare($query);
+    $stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
+    $stmt->execute();
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Return the data as JSON
+    header('Content-Type: application/json');
+    echo json_encode($data);
+} catch (Exception $e) {
+    echo json_encode(['error' => $e->getMessage()]);
 }
-
-// Get the ID of the store
-$storeId = getStoreId();
-
-// Initialize variables for statistics
-$numProducts = 0;
-$acceptedOrders = 0;
-$cancelledOrders = 0;
-$todaysOrders = 0;
-$monthlyOrders = 0;
-$storeEvaluation = 0;
-
-// Fetch number of products
-$query = "SELECT COUNT(*) as num_products FROM produits WHERE Id_magasin = :storeId";
-$stmt = $con->prepare($query);
-$stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$numProducts = $row['num_products'];
-
-// Fetch accepted orders
-$query = "SELECT COUNT(*) as accepted_orders FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande IN (1, 2, 3, 4, 6)";
-$stmt = $con->prepare($query);
-$stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$acceptedOrders = $row['accepted_orders'];
-
-// Fetch cancelled orders
-$query = "SELECT COUNT(*) as cancelled_orders FROM demandes WHERE Id_magasin = :storeId AND Id_Statut_Commande = 5";
-$stmt = $con->prepare($query);
-$stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$cancelledOrders = $row['cancelled_orders'];
-
-// Fetch today's orders
-$todayDate = date('Y-m-d');
-$query = "SELECT COUNT(*) as todays_orders FROM demandes WHERE Id_magasin = :storeId AND DATE(Date_commande) = :todayDate";
-$stmt = $con->prepare($query);
-$stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
-$stmt->bindValue(':todayDate', $todayDate, PDO::PARAM_STR);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$todaysOrders = $row['todays_orders'];
-
-// Fetch monthly orders
-$thisMonth = date('Y-m');
-$query = "SELECT COUNT(*) as monthly_orders FROM demandes WHERE Id_magasin = :storeId AND DATE_FORMAT(Date_commande, '%Y-%m') = :thisMonth";
-$stmt = $con->prepare($query);
-$stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
-$stmt->bindValue(':thisMonth', $thisMonth, PDO::PARAM_STR);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$monthlyOrders = $row['monthly_orders'];
-
-// Fetch store evaluation
-$query = "SELECT Evaluation FROM magasin WHERE Id_magasin = :storeId";
-$stmt = $con->prepare($query);
-$stmt->bindValue(':storeId', $storeId, PDO::PARAM_INT);
-$stmt->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$storeEvaluation = $row['Evaluation'];
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magasin Statistics</title>
-</head>
-<body>
-    <h1>Magasin Statistics</h1>
-    <form method="post">
-        <h2>Statistics for Store ID: <?php echo htmlspecialchars($storeId); ?></h2>
-        <p>Number of Products: <?php echo htmlspecialchars($numProducts); ?></p>
-        <p>Accepted Orders: <?php echo htmlspecialchars($acceptedOrders); ?></p>
-        <p>Cancelled Orders: <?php echo htmlspecialchars($cancelledOrders); ?></p>
-        <p>Today's Orders: <?php echo htmlspecialchars($todaysOrders); ?></p>
-        <p>This Month's Orders: <?php echo htmlspecialchars($monthlyOrders); ?></p>
-        <p>Store Evaluation: <?php echo htmlspecialchars($storeEvaluation); ?></p>
-    </form>
-</body>
-</html>
