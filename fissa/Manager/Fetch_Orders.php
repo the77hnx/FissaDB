@@ -1,6 +1,9 @@
 <?php
 include '../connect.php'; // Include database connection
 
+// Start the session to access the current user
+session_start();
+
 // Function to fetch orders by status and Id_Magasin
 function fetchOrdersByMagasinAndStatus($magasinId, $statusId) {
     global $con;
@@ -24,16 +27,49 @@ function fetchOrdersByMagasinAndStatus($magasinId, $statusId) {
 }
 
 // Example usage
-$magasinId = 5;  // The Id_Magasin you are filtering by
-$statusOrders = [
-    'case0' => fetchOrdersByMagasinAndStatus($magasinId, 1),
-    'case1' => fetchOrdersByMagasinAndStatus($magasinId, 2),
-    'case2' => fetchOrdersByMagasinAndStatus($magasinId, 3),
-    'case3' => fetchOrdersByMagasinAndStatus($magasinId,4),
-    'case4' => fetchOrdersByMagasinAndStatus($magasinId,6),
-    'case5' => fetchOrdersByMagasinAndStatus($magasinId, 5)
-];
 
-// Set header for JSON response
-header('Content-Type: application/json');
-echo json_encode($statusOrders); // Send all data in JSON format for the Java code to handle
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['user_id']) && isset($_POST['case_number'])) {
+        $userId = $_POST['user_id'];
+        $caseNumber = $_POST['case_number'];
+
+        // Store the user ID in the session
+        $_SESSION['userId'] = $userId;
+        $magasinId = $_SESSION['userId'];
+
+        // Determine status ID based on the case number
+        $statusId = null;
+        switch ($caseNumber) {
+            case 0:
+                $statusId = 1;
+                break;
+            case 1:
+                $statusId = 2;
+                break;
+            case 2:
+                $statusId = 3;
+                break;
+            case 3:
+                $statusId = 4;
+                break;
+            case 4:
+                $statusId = 6;
+                break;
+            case 5:
+                $statusId = 5;
+                break;
+            default:
+                // Handle unknown case
+                echo json_encode(['error' => 'Invalid case number']);
+                exit;
+        }
+
+        // Fetch orders for the corresponding status ID
+        $orders = fetchOrdersByMagasinAndStatus($magasinId, $statusId);
+        header('Content-Type: application/json');
+        echo json_encode($orders);
+    } else {
+        // Handle missing parameters
+        echo json_encode(['error' => 'Missing user_id or case_number']);
+    }
+}

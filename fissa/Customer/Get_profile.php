@@ -2,34 +2,40 @@
 
 include '../connect.php';
 
-session_start(); // Start the session
+session_start(); // بدء الجلسة
 
-header('Content-Type: application/json'); // Set the content type to JSON
+header('Content-Type: application/json'); // تعيين نوع المحتوى إلى JSON
 
-try {
-    // Check if user ID is set in session
-    if (!isset($_SESSION['userId'])) {
-        echo json_encode(["error" => "User ID not found in session. Please log in."]);
-        exit();
-    }
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['user_id'])) {
+        $userId = $_POST['user_id'];
 
-    $userId = $_SESSION['userId'];
+        // تخزين ID المستخدم في الجلسة
+        $_SESSION['userId'] = $userId;
 
-    // Prepare and execute SQL query
-    $stmt = $con->prepare("SELECT Nom_Client AS fullName, E_mail AS email, Tel_Client AS phone, Password AS password, Coordonnes AS address FROM client WHERE Id_Client = ?");
-    $stmt->execute([$userId]);
+        try {
+            // استرجاع userId من الجلسة
+            $userId = $_SESSION['userId'];
 
-    // Fetch the result as an associative array
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            // إعداد وتنفيذ استعلام SQL
+            $stmt = $con->prepare("SELECT Nom_Client AS fullName, E_mail AS email, Tel_Client AS phone, Password AS password, Coordonnes AS address FROM client WHERE Id_Client = ?");
+            $stmt->execute([$userId]);
 
-    // Check if user data is found
-    if (empty($user)) {
-        echo json_encode(["error" => "User not found"]);
+            // استرجاع النتيجة كمصفوفة ترابطية
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // التحقق مما إذا كانت بيانات المستخدم موجودة
+            if (empty($user)) {
+                echo json_encode(["error" => "User not found"]);
+            } else {
+                // إعادة بيانات المستخدم بصيغة JSON
+                echo json_encode($user);
+            }
+        } catch (PDOException $e) {
+            error_log("Error: " . $e->getMessage());
+            echo json_encode(["error" => "Database error"]);
+        }
     } else {
-        // Return user data as JSON
-        echo json_encode($user);
+        echo json_encode(["error" => "User ID not provided"]);
     }
-} catch (PDOException $e) {
-    error_log("Error: " . $e->getMessage());
-    echo json_encode(["error" => "Database error"]);
 }

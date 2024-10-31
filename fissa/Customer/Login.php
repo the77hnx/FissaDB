@@ -25,7 +25,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($password === $stored_password) {
             echo json_encode([
                 'success' => true,
-                'message' => 'Login successful!'
+                'message' => 'Login successful!',
+                'userId' => $userId // Include the user ID in the response
             ]);
             $_SESSION['userId'] = $userId; // Set the user ID in the session
         } else {

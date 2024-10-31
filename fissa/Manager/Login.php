@@ -1,7 +1,9 @@
 <?php
 
 include '../connect.php';
+
 session_start();
+
 header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -28,8 +30,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo json_encode([
                     'success' => true,
                     'activite' => 'مقبول',
-                    'message' => 'Login successful!'
+                    'message' => 'Login successful!',
+                    'userId' => $userId // Include the user ID in the response
                 ]);
+                $_SESSION['userId'] = $userId; // Set the user ID in the session
             } elseif ($activite === "قيد المراجعة") {
                 echo json_encode([
                     'success' => true,

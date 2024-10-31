@@ -29,8 +29,10 @@ try {
                     echo json_encode([
                         'success' => true,
                         'activite' => 'مقبول',
-                        'message' => 'Login successful!'
+                        'message' => 'Login successful!',
+                        'userId' => $userId // Include the user ID in the response
                     ]);
+                    $_SESSION['userId'] = $userId; // Set the user ID in the session
                 } elseif ($activite === "قيد المراجعة") {
                     echo json_encode([
                         'success' => true,

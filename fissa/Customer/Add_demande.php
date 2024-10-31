@@ -5,8 +5,7 @@ include "../connect.php";
 // Start the session
 session_start();
 
-// Hardcode client ID for testing
-$_SESSION['Id_Client'] = 17;
+header('Content-Type: application/json'); // Set header for JSON response
 
 // Check if the form has been submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -21,6 +20,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Additional information
     $additionalInfomag = htmlspecialchars($_POST['additionalInfomag']);
     $additionalInfoliv = htmlspecialchars($_POST['additionalInfoliv']);
+
+
+    $_SESSION['userId'] = $customerId;
 
     // Prepare to handle multiple products
     $productNames = [];
@@ -42,7 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Fetch Id_magasin, Id_Client, Id_Livreur
         $id_magasin = getMagasinIdByName($restaurantName);
-        $id_client = $_SESSION['Id_Client'];
+        $id_client = $_SESSION['userId'];
         $id_livreur = getLivreurId();
         $id_statut_commande = 1; // Default status
         $prix_demande = (float)$totalPrice;

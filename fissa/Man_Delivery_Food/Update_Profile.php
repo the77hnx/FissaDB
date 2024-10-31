@@ -1,22 +1,13 @@
 <?php
-include "../connect.php"; // Including the database connection file
-
-// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Get the user ID
-$userId = 0; // Example user ID, replace with dynamic ID
+include "../connect.php"; // Including the database connection file
+session_start();
 
-// Check if the request method is POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo "Invalid request method.";
-    exit;
-}
-
-// If form is submitted, update the information
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Getting the data from the form
+    $userId = $_POST['user_id'];
     $livreurName = $_POST['Nom_Livreur'];
     $vehiculeName = $_POST['Nom_Vehicule'];
     $phoneNumber = $_POST['Tel_Livreur'];
@@ -24,6 +15,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $numberVehicule = $_POST['N_Vehicule'];
     $coordinates = $_POST['Coordonnes'];
 
+    // تخزين ID المستخدم في الجلسة
+    $_SESSION['userId'] = $userId;
+
+    // استرجاع userId من الجلسة
+    $userId = $_SESSION['userId'];
+    
     // Update query
     $sql = "UPDATE livreur SET Nom_Livreur = ?, Nom_Vehicule = ?, Tel_Livreur = ?, Password = ?, N_Vehicule = ?, Coordonnes = ? WHERE Id_Livreur = ?";
     $params = [$livreurName, $vehiculeName, $phoneNumber, $password, $numberVehicule, $coordinates, $userId];

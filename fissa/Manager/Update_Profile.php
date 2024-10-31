@@ -5,8 +5,7 @@ include "../connect.php"; // Including the database connection file
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Get the user ID
-$userId = 5; // Example user ID, replace with dynamic ID
+session_start();
 
 // Check if the request method is POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -23,6 +22,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['Password'];
     $address = $_POST['Address_magasin'];
     $coordinates = $_POST['Coordonnes'];
+    $userId = $_POST['user_id'];
+
+    // تخزين ID المستخدم في الجلسة
+    $_SESSION['userId'] = $userId;
+
+    // استرجاع userId من الجلسة
+    $userId = $_SESSION['userId'];
 
     // Update query
     $sql = "UPDATE magasin SET Nom_magasin = ?, Descriptif_magasin = ?, Tel_magasin = ?, Password = ?, Address_magasin = ?, Coordonnes = ? WHERE Id_magasin = ?";

@@ -5,11 +5,18 @@ error_reporting(E_ALL);       // Report all errors
 
 include '../connect.php';
 
-$ManDeliveryId = 0; // Assuming the delivery worker ID is hardcoded or dynamically set
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['user_id'])) {
+        $userId = $_POST['user_id'];
 
-try {
-    // Fetch the necessary information
-    $query = "SELECT 
+        // Store the user ID in the session
+        $_SESSION['userId'] = $userId;
+
+        try {
+            $current_user_id = $_SESSION['userId'];
+
+            // Fetch the necessary information
+            $query = "SELECT 
                 l.Statut_Livreur, 
                 l.Nom_Livreur AS Livreur_name,
                 (SELECT COUNT(*) FROM demandes WHERE Id_Livreur = :mandeliveryId AND Id_Statut_Commande IN (1, 2, 3, 4, 6)) AS accepted_orders,
@@ -39,14 +46,21 @@ try {
                 l.Id_Livreur = :mandeliveryId
                 AND d.Id_Statut_Commande IN (3, 4)";
 
-    $stmt = $con->prepare($query);
-    $stmt->bindValue(':mandeliveryId', $ManDeliveryId, PDO::PARAM_INT);
-    $stmt->execute();
-    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $con->prepare($query);
+            $stmt->bindValue(':mandeliveryId', $ManDeliveryId, PDO::PARAM_INT);
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Return the data as JSON
-    header('Content-Type: application/json');
-    echo json_encode($data);
-} catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+            // Return the data as JSON
+            header('Content-Type: application/json');
+            echo json_encode($data);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+
+    } else {
+        echo json_encode(['error' => 'Missing user_id']);
+    }
+} else {
+    echo json_encode(['error' => 'Invalid request method']);
 }
