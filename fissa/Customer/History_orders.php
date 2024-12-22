@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['userId'] = $userId;
 
         try {
-            // Check if the session is valid
+            // Check if the session is valid    
             if (!isset($_SESSION['userId'])) {
                 throw new Exception('Session expired. Please log in again.');
             }
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 SELECT 
                     o.Id_Demandes AS orderId,
                     s.Nom_magasin AS storeName,
-                    o.Prix_Livraison AS deliveryPrice,
+                    IFNULL(o.Prix_Livraison, 0) AS deliveryPrice,
                     o.Prix_Demande AS orderPrice,
                     o.Date_commande AS orderDate,
                     o.Heure_commande AS orderTime,

@@ -21,11 +21,13 @@ if (isset($inputData['Id_Demandes'])) {
             r.Nom_magasin AS restaurant_name, 
             r.Address_magasin AS restaurant_address, 
             r.Statut_magasin AS restaurant_status, 
+            r.Image_path AS restaurantImage,
             r.Evaluation AS restaurant_eval, 
             c.Id_Client AS customerId, 
             c.Nom_Client AS customerName, 
             c.Tel_Client AS customerNumber, 
             c.E_mail AS customerEmail, 
+            c.Image_path AS customerImage,
             c.Coordonnes AS customerCoordinates, 
             s.Nom_Statut AS orderStatus 
         FROM 
@@ -57,27 +59,31 @@ if (isset($inputData['Id_Demandes'])) {
                 "restaurant_name" => $order['restaurant_name'],
                 "restaurant_address" => $order['restaurant_address'],
                 "restaurant_status" => $order['restaurant_status'],
+                "restaurantImage" => $order['restaurantImage'],
                 "restaurant_eval" => $order['restaurant_eval'],
                 "customerId" => $order['customerId'],
                 "customerName" => $order['customerName'],
                 "customerNumber" => $order['customerNumber'],
                 "customerEmail" => $order['customerEmail'],
+                "customerImage" => $order['customerImage'], 
                 "customerCoordinates" => $order['customerCoordinates'],
                 "orderStatus" => $order['orderStatus']
             );
 
             // Fetch the items in the order
             $sqlItems = "
-                SELECT 
-                    Nom_Article AS itemName, 
-                    Quantite AS itemQuantity, 
-                    Prix AS itemPrice 
-                FROM 
-                    articles 
-                WHERE 
-                    Id_Demandes = :orderId
-            ";
-
+                        SELECT 
+                                a.Nom_Article AS itemName, 
+                                a.Quantite AS itemQuantity, 
+                                a.Prix AS itemPrice, 
+                                p.Image_path AS itemImage 
+                        FROM 
+                                articles a
+                        JOIN 
+                                produits p ON a.Nom_Article = p.Nom_Prod
+                        WHERE 
+                                a.Id_Demandes = :orderId
+                        ";
             $stmtItems = $con->prepare($sqlItems);
             $stmtItems->bindValue(':orderId', $orderId, PDO::PARAM_INT);
 

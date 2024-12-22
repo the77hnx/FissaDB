@@ -1,6 +1,9 @@
 <?php
 include '../connect.php';
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Start the session to access the current user
 session_start();
 
@@ -10,30 +13,31 @@ header('Content-Type: application/json'); // Set header for JSON response
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get the posted status
     $userId = $_POST['user_id'];
-    $statut_magasin = isset($_POST['statut_magasin']) ? $_POST['statut_magasin'] : 'مغلق';
+    $statut_magasin = isset($_POST['statut_magasin']) ? $_POST['statut_magasin'] : '';
 
-    // Store the user ID in the session
-    $_SESSION['userId'] = $userId;
 
-    // Retrieve userId from the session
-    $current_user_id = $_SESSION['userId'];
+    error_log("POST Data: user_id = $userId, statut_magasin = $statut_magasin");
 
-    // Fetch the current status from the database
-    $stmt = $con->prepare("SELECT Statut_magasin FROM magasin WHERE Id_magasin = ?");
-    $stmt->bindParam(':user_id', $current_user_id, PDO::PARAM_INT);
-    $stmt->execute();
-    
-    $currentStatus = $stmt->fetchColumn();
+    // Check if user_id and statut_magasin are not empty
+    if (!empty($userId) && !empty($statut_magasin)) {
+        // Prepare an SQL query to update the store status in the database
+        $query = "UPDATE magasin SET Statut_magasin = ? WHERE Id_magasin = ?";
+        $stmt = $con->prepare($query);
+        $stmt->bind_param('ss', $statut_magasin, $userId);
 
-    // Check if the current status matches the posted value
-    if ($currentStatus !== $statut_magasin) {
-        // Update the status in the database
-        $updateStmt = $con->prepare("UPDATE magasin SET Statut_magasin = ? WHERE Id_magasin = ?");
-        $updateStmt->bindValue(1, $statut_magasin, PDO::PARAM_STR);
-        $updateStmt->bindParam(':user_id', $current_user_id, PDO::PARAM_INT);
-        $updateStmt->execute();
+        // Execute the query and check if it was successful
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success', 'message' => 'Store status updated successfully.']);
+        } else {
+            error_log("SQL Error: " . $stmt->error);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update store status: ' . $stmt->error]);
+        }
+
+        // Close the statement
+        $stmt->close();
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid input.']);
     }
-
-    // Return success response
-    echo json_encode(["success" => true]);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
 }

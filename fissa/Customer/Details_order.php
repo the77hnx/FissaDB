@@ -41,13 +41,15 @@ function getOrderDetails($con, $orderId) {
         return;
     }
 
-    // SQL to fetch only the necessary details
+    // SQL to fetch only the necessary details  
     $sql = "SELECT 
             r.Nom_magasin AS restaurant_name, 
             r.Address_magasin AS restaurant_address, 
             r.Statut_magasin AS restaurant_status, 
             r.Evaluation AS restaurant_eval, 
+            r.Image_path AS restaurant_image_path, 
             l.Nom_Livreur AS delivery_worker_name, 
+            l.Image_path AS delivery_worker_image_path,
             d.info_mag AS additional_info_magasin,
             d.info_liv AS additional_info_livreur
         FROM demandes d 
@@ -61,7 +63,19 @@ function getOrderDetails($con, $orderId) {
 
     if ($order) {
         // Fetching order items
-        $sql_items = "SELECT Nom_Article, Quantite, Prix FROM articles WHERE Id_Demandes = ?";
+            $sqlItems = "
+                        SELECT 
+                                a.Nom_Article AS itemName, 
+                                a.Quantite AS itemQuantity, 
+                                a.Prix AS itemPrice, 
+                                p.Image_path AS itemImage 
+                        FROM 
+                                articles a
+                        JOIN 
+                                produits p ON a.Nom_Article = p.Nom_Prod
+                        WHERE 
+                                a.Id_Demandes = :orderId
+                        ";    
         $stmt_items = $con->prepare($sql_items);
         $stmt_items->execute([$orderId]);
         $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);

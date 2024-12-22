@@ -1,18 +1,23 @@
 <?php
 include "../connect.php";
+error_log(print_r(file_get_contents("php://input"), true));
 
 // Start the session to access the current user
 session_start();
+header('Content-Type: application/json'); // Set the content type to JSON
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['user_id'])) {
-        $userId = $_POST['user_id'];
+    
+    $data = json_decode(file_get_contents("php://input"), true);
+    
+    if (isset($data['user_id'])) {
+        $userId = $data['user_id'];
+        $_SESSION['user_id'] = $userId; // Store the user ID in the session
 
-        // Store the user ID in the session
-        $_SESSION['userId'] = $userId;
 
-
-        $current_user_id = $_SESSION['userId'];
+        // Use the session variable to fetch data
+        $current_user_id = $_SESSION['user_id'];
+        
         // Fetch categories
         $query_categories = "
         SELECT Id_Cat, Nom_Cat 
@@ -32,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         Nom_Prod, 
         Prix_prod, 
         Desc_prod, 
-        Id_Cat 
+        Id_Cat,
+        Image_path 
     FROM 
         produits 
     WHERE 
@@ -54,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header('Content-Type: application/json');
         echo json_encode($response);
     } else {
-        echo json_encode(['error' => 'User ID not provided.']);
+        echo json_encode(['error' => 'User ID not provided. isset post']);
     }
 } else {
-    echo json_encode(['error' => 'User ID not provided.']);
+    echo json_encode(['error' => 'User ID not provided post.']);
 }

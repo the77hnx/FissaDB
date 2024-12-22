@@ -15,7 +15,8 @@ try {
                 m.Nom_magasin AS restaurantName, 
                 m.Statut_magasin AS restaurantStatus, 
                 m.Evaluation AS restaurantValue, 
-                m.Address_magasin AS restaurantLocation 
+                m.Address_magasin AS restaurantLocation,
+                m.Image_path AS restaurantImage
             FROM magasin m
             JOIN restaurant_categories rc ON m.Id_magasin = rc.Id_magasin
             WHERE m.Statut_magasin = 'مفتوح' AND rc.Id_Cat = :categoryId";
@@ -30,8 +31,9 @@ try {
                 Nom_magasin AS restaurantName, 
                 Statut_magasin AS restaurantStatus, 
                 Evaluation AS restaurantValue, 
-                Address_magasin AS restaurantLocation 
-            FROM magasin 
+                Address_magasin AS restaurantLocation,
+                Image_path AS restaurantImage
+            FROM magasin
             WHERE Statut_magasin = 'مفتوح'";
         
         $stmt_restaurants = $con->prepare($query_restaurants);
@@ -67,6 +69,6 @@ try {
 
 } catch (Exception $e) {
     // Handle exceptions and output error message
-    http_response_code(500);
+    http_response_code(600);
     echo json_encode(['error' => $e->getMessage()]);
 } 

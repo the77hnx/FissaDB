@@ -20,7 +20,9 @@ if (isset($_POST['restaurantId'])) {
 
     if ($restaurant) {
         // Query to get products for the restaurant
-        $productsQuery = "SELECT * FROM produits WHERE Id_magasin = :id AND Disp = 'Yes'";
+        $productsQuery = "SELECT * FROM produits WHERE Id_magasin = :id  AND Disp = 'Yes' ";
+        
+        
         $productsStmt = $con->prepare($productsQuery);
         $productsStmt->bindParam(':id', $restaurant['Id_magasin'], PDO::PARAM_INT);
         $productsStmt->execute();
@@ -33,10 +35,13 @@ if (isset($_POST['restaurantId'])) {
             'products' => array_map(function($product) {
                 return [
                     'productName' => $product['Nom_Prod'],
+                    'productImage' => $product['Image_path'],
                     'price' => $product['Prix_prod'],
                     'count' => 0 // Add default count value, since it's not in the table
                 ];
-            }, $products)
+            }, $products),
+            'restaurantImage' => $restaurant['Image_path'] // Add this line
+
         ]);
     } else {
         echo json_encode(['error' => 'Restaurant not found']);

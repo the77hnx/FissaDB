@@ -1,39 +1,32 @@
 <?php
 include '../connect.php';
-
-// Start the session to access the current user
 session_start();
 
-header('Content-Type: application/json'); // Set header for JSON response
+header('Content-Type: application/json');
 
-// Check if it's a POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get the posted status
     $userId = $_POST['user_id'];
-    $statut_magasin = isset($_POST['statut_livreur']) ? $_POST['statut_livreur'] : 'غير متاح';
+    $statut_magasin = isset($_POST['statut_magasin']) ? $_POST['statut_magasin'] : 'غير متاح';
 
-    // Store the user ID in the session
     $_SESSION['userId'] = $userId;
 
-    // Retrieve userId from the session
     $current_user_id = $_SESSION['userId'];
     
-    // Fetch the current status from the database
     $stmt = $con->prepare("SELECT Statut_Livreur FROM livreur WHERE Id_Livreur = ?");
-    $stmt->bindValue(':user_id', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindParam(1, $current_user_id, PDO::PARAM_INT);
     $stmt->execute();
     
     $currentStatus = $stmt->fetchColumn();
 
-    // Check if the current status matches the posted value
     if ($currentStatus !== $statut_magasin) {
-        // Update the status in the database
         $updateStmt = $con->prepare("UPDATE livreur SET Statut_Livreur = ? WHERE Id_Livreur = ?");
-        $updateStmt->bindValue(1, $statut_magasin, PDO::PARAM_STR);
-        $updateStmt->bindValue(':user_id', $storeId, PDO::PARAM_INT);
+        $updateStmt->bindParam(1, $statut_magasin, PDO::PARAM_STR);
+        $updateStmt->bindParam(2, $current_user_id, PDO::PARAM_INT);
         $updateStmt->execute();
     }
 
-    // Return success response
     echo json_encode(["success" => true]);
+} else {
+    echo json_encode(["success" => false, "message" => "Invalid request"]);
 }
+?>

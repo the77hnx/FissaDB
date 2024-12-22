@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $userId = $_POST['user_id'];
 
         // Store the user ID in the session
-        $_SESSION['userId'] = $userId;
+        $_SESSION['user_id'] = $userId;
 
         try {
             // Query to get all orders for the logged-in Livreur
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                AND Id_Statut_Commande IN (3, 4, 6)";
 
             $stmt_orders = $con->prepare($sql_orders);
-            $stmt_orders->bindParam(':Id_Livreur', $Id_Livreur, PDO::PARAM_INT);
+            $stmt_orders->bindParam(':Id_Livreur', $userId, PDO::PARAM_INT);
             $stmt_orders->execute();
             $result_orders = $stmt_orders->fetchAll(PDO::FETCH_ASSOC);
 
@@ -50,7 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'Heure_commande' => $Heure_commande
                 ];
             }
-            echo json_encode($orders);
+             // If no orders were found, return an empty array
+            if (empty($orders)) {
+                echo json_encode(['message' => 'No orders found', 'orders' => []]);
+            } else {
+                echo json_encode(['message' => 'Orders retrieved successfully', 'orders' => $orders]);
+            }
         } catch (PDOException $e) {
             // Log the error message
             error_log("Database error: " . $e->getMessage());
@@ -60,5 +65,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         echo json_encode(['error' => 'User ID not provided.']);
     }
 } else {
-    echo json_encode(['error' => 'User ID not provided.']);
+    echo json_encode(['error' => 'Invalid request method.']);
 }

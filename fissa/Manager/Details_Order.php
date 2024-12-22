@@ -21,6 +21,7 @@ if (isset($_GET['orderId'])) {
             c.Tel_Client AS customerNumber, 
             c.E_mail AS customerEmail, 
             c.Coordonnes AS customerCoordinates, 
+            c.Image_path AS customerImagePath,
             s.Nom_Statut AS orderStatus 
         FROM 
             demandes o 
@@ -54,7 +55,8 @@ if (isset($_GET['orderId'])) {
                         'customerName' => $orderData['customerName'],
                         'customerNumber' => $orderData['customerNumber'],
                         'customerEmail' => $orderData['customerEmail'],
-                        'customerCoordinates' => $orderData['customerCoordinates']
+                        'customerCoordinates' => $orderData['customerCoordinates'],
+                        'imagePath' => $orderData['customerImagePath'] 
                     ),
                     'orderStatus' => $orderData['orderStatus']
                 );

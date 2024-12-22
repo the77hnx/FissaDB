@@ -5,7 +5,10 @@ include '../connect.php';
 session_start(); // بدء الجلسة
 
 header('Content-Type: application/json'); // تعيين نوع المحتوى إلى JSON
-
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(["error" => "Invalid request method"]);
+    exit();
+}
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['user_id'])) {
         $userId = $_POST['user_id'];
@@ -18,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $userId = $_SESSION['userId'];
 
             // إعداد وتنفيذ استعلام SQL
-            $stmt = $con->prepare("SELECT Nom_Client AS fullName, E_mail AS email, Tel_Client AS phone, Password AS password, Coordonnes AS address, Image_path AS imagePath  FROM client WHERE Id_Client = ?");
+            $stmt = $con->prepare("SELECT Nom_Livreur AS Nom_Livreur, Nom_Vehicule AS Nom_Vehicule, Tel_Livreur AS Tel_Livreur, Coordonnes AS Coordonnes, N_Vehicule AS N_Vehicule, Password AS Password , Image_path AS imagePath  FROM livreur WHERE Id_Livreur = ?");
             $stmt->execute([$userId]);
 
             // استرجاع النتيجة كمصفوفة ترابطية
@@ -32,8 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 echo json_encode($user);
             }
         } catch (PDOException $e) {
-            error_log("Error: " . $e->getMessage());
-            echo json_encode(["error" => "Database error"]);
+               error_log("Database error: " . $e->getMessage());
+    echo json_encode(["error" => "Internal server error"]);
+    http_response_code(500); // Optional for clarity
         }
     } else {
         echo json_encode(["error" => "User ID not provided"]);
